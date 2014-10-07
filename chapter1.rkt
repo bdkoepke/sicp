@@ -93,6 +93,11 @@
                      (else -1))
                (+ a 1)) 16))
 
+(test-case
+ "Exercise 1.2"
+ (check-eqv? (/ (+ 5 4 (- 2 (- 3 (+ 6 4/5))))
+                (* 3 (- 6 2) (- 2 7))) -37/150))
+
 (define (exercise-1-3 x y z)
   (if (> x y)
       (if (> y z)
@@ -117,26 +122,103 @@
  "Exercise 1.4"
  (check-eq? (a-plus-abs-b 5 -10) 15))
 
-(define epsilon 0.001)
-(define (sqrt-iter x guess)
-  (if (good-enough? x guess)
-      guess
-      (sqrt-iter x (improve x guess))))
-(define (improve x guess)
-  (average guess (/ x guess)))
+(define epsilon 0.0001)
 (define (average x y)
   (/ (+ x y) 2))
-(define (good-enough? x guess)
-  (< (abs (- (square guess) x)) epsilon))
-(define (sqrt x)
-  (sqrt-iter x 1.0))
 (define (approx? x y)
-  (>= epsilon (abs (- x y))))
+  (>= (* epsilon 10) (abs (- x y))))
 (define (check-approx? actual expected)
   (check-true (approx? actual expected)))
+
+(define (sqrt x)
+  (define (good-enough? guess)
+    (< (abs (- (improve guess) guess)) (* guess epsilon)))
+  (define (improve guess)
+    (average guess (/ x guess)))
+  (define (sqrt-iter guess)
+    (if (good-enough? guess)
+        guess
+        (sqrt-iter (improve guess))))
+  (sqrt-iter 1.0))
 (test-case
  "1.1.7 Example: Square roots by Newton's Method"
  (check-approx? (sqrt 2) 1.414)
  (check-approx? (sqrt 9) 3)
  (check-approx? (sqrt (+ 100 37)) 11.705)
  (check-approx? (square (sqrt 1000)) 1000))
+
+(define (cube x) (* x x x))
+(define (cuberoot x)
+  (define (good-enough? guess)
+    (< (abs (- (improve guess) guess)) (* guess epsilon)))
+  (define (improve guess)
+    (/ (+ (/ x (square guess)) (* 2 guess)) 3))
+  (define (cuberoot-iter guess)
+    (if (good-enough? guess)
+        guess
+        (cuberoot-iter (improve guess))))
+  (cuberoot-iter 1.0))
+(test-case
+ "Exercise 1.8"
+ (check-approx? (cube (cuberoot 27)) 27))
+
+(define (_factorial n)
+  (if (= n 1)
+      1
+      (* n (_factorial (- n 1)))))
+(define (factorial n)
+  (define (fact-iter product counter)
+    (if (> counter n)
+        product
+        (fact-iter (* counter product)
+                   (+ counter 1))))
+  (fact-iter 1 1))
+
+(test-case
+ "1.2.1 Linear Recursion and Iteration"
+ (check-eq? (_factorial 6) 720)
+ (check-eq? (factorial 6) 720))
+
+(define (A x y)
+  (cond ((= y 0) 0)
+        ((= x 0) (* 2 y))
+        ((= y 1) 2)
+        (else (A (- x 1) (A x (- y 1))))))
+(test-case
+ "Exercise 1.10"
+ (check-eq? (A 1 10) 1024)
+ (check-eq? (A 2 4) 65536)
+ (check-eq? (A 3 3) 65536)
+ (check-false true))
+
+(define (_fib n)
+  (cond ((= n 0) 0)
+        ((= n 1) 1)
+        (else (+ (_fib (- n 1)) (_fib (- n 2))))))
+(define (fib n)
+  (define (fib-iter a b count)
+    (if (= count 0)
+        b
+        (fib-iter (+ a b) a (- count 1))))
+  (fib-iter 1 0 n))
+(define (count-change amount)
+  (define (cc amount kinds-of-coins)
+    (define (first-denomination kinds-of-coins)
+      (cond ((= kinds-of-coins 1) 1)
+            ((= kinds-of-coins 2) 5)
+            ((= kinds-of-coins 3) 10)
+            ((= kinds-of-coins 4) 25)
+            ((= kinds-of-coins 5) 50)))
+    (cond ((= amount 0) 1)
+          ((or (< amount 0) (= kinds-of-coins 0)) 0)
+          (else (+ (cc amount
+                       (- kinds-of-coins 1))
+                   (cc (- amount)
+                       (first-denomination kinds-of-coins))
+                   kinds-of-coins))))
+  (cc amount 5))
+(test-case
+ "1.2.2 Tree Recursion"
+ (check-eq? (_fib 6) 8)
+ (check-eq? (fib 6) 8)
+ );(check-eq? (count-change 100) 292))
