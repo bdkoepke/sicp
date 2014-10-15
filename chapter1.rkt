@@ -1,5 +1,7 @@
 #lang racket
 (require rackunit)
+(require racket/trace)
+
 (test-case
  "1.1.1 Expressions"
  (check-eq? (+ 137 349) 486)
@@ -34,7 +36,7 @@
 (define (square x) (* x x))
 (define (sum-of-squares x y)
   (+ (square x) (square y)))
-(define (f a)
+(define (_f a)
   (sum-of-squares (+ a 1) (* a 2)))
 (test-case
  "1.1.4 Compound Procedures"
@@ -42,16 +44,16 @@
  (check-eq? (square (+ 2 5)) 49)
  (check-eq? (square (square 3)) 81)
  (check-eq? (sum-of-squares 3 4) 25)
- (check-eq? (f 5) 136))
+ (check-eq? (_f 5) 136))
 (test-case
  "1.1.5 The Substitution Model for Procedure Application"
- (check-eq? (f 5) 136)
+ (check-eq? (_f 5) 136)
  (check-eq? (sum-of-squares (+ 5 1) (* 5 2)) 136)
  (check-eq? (+ (square 6) (square 10)) 136)
  (check-eq? (+ (* 6 6) (* 10 10)) 136)
  (check-eq? (+ 36 100) 136)
  ; Applicative order versus normal order
- (check-eq? (f 5) 136)
+ (check-eq? (_f 5) 136)
  (check-eq? (sum-of-squares (+ 5 1) (* 5 2)) 136)
  (check-eq? (+ (square (+ 5 1)) (square (* 5 2))) 136)
  (check-eq? (+ (* (+ 5 1) (+ 5 1)) (* (* 5 2) (* 5 2))) 136)
@@ -188,8 +190,7 @@
  "Exercise 1.10"
  (check-eq? (A 1 10) 1024)
  (check-eq? (A 2 4) 65536)
- (check-eq? (A 3 3) 65536)
- (check-false true))
+ (check-eq? (A 3 3) 65536))
 
 (define (_fib n)
   (cond ((= n 0) 0)
@@ -213,12 +214,151 @@
           ((or (< amount 0) (= kinds-of-coins 0)) 0)
           (else (+ (cc amount
                        (- kinds-of-coins 1))
-                   (cc (- amount)
-                       (first-denomination kinds-of-coins))
-                   kinds-of-coins))))
+                   (cc (- amount
+                          (first-denomination kinds-of-coins))
+                       kinds-of-coins)))))
   (cc amount 5))
 (test-case
  "1.2.2 Tree Recursion"
  (check-eq? (_fib 6) 8)
  (check-eq? (fib 6) 8)
- );(check-eq? (count-change 100) 292))
+ (check-eq? (count-change 100) 292))
+
+(define (f n)
+  (cond ((< n 3) n)
+        (else (+ (f (- n 1))
+                 (* 2 (f (- n 2)))
+                 (* 3 (f (- n 3)))))))
+(define (f-iter n)
+  (define (_f-iter counter a b c)
+    (cond ((<= counter n)
+           (_f-iter (+ counter 1)
+                    (+ a
+                       (* 2 b)
+                       (* 3 c))
+                    a b))
+          (else a)))
+  (cond ((< n 3) n)
+        (else (_f-iter 3 2 1 0))))
+(test-case
+ "Exercise 1.11"
+ (check-eq? (f 0) 0)
+ (check-eq? (f 1) 1)
+ (check-eq? (f 2) 2)
+ (check-eq? (f 3) 4)
+ (check-eq? (f 4) 11)
+ (check-eq? (f 5) 25)
+ (check-eq? (f-iter 0) 0)
+ (check-eq? (f-iter 1) 1)
+ (check-eq? (f-iter 2) 2)
+ (check-eq? (f-iter 3) 4)
+ (check-eq? (f-iter 4) 11)
+ (check-eq? (f-iter 5) 25))
+
+(define (pascal-triangle r c)
+  (cond ((= c r) 1)
+        ((= c 1) 1)
+        (else (+ (pascal-triangle (- r 1) c)
+                 (pascal-triangle (- r 1) (- c 1))))))
+(test-case
+ "Exercise 1.12"
+ (check-eq? (pascal-triangle 1 1) 1)
+ (check-eq? (pascal-triangle 2 1) 1)
+ (check-eq? (pascal-triangle 2 2) 1)
+ (check-eq? (pascal-triangle 3 1) 1)
+ (check-eq? (pascal-triangle 3 2) 2)
+ (check-eq? (pascal-triangle 3 3) 1)
+ (check-eq? (pascal-triangle 4 1) 1)
+ (check-eq? (pascal-triangle 4 2) 3)
+ (check-eq? (pascal-triangle 4 3) 3)
+ (check-eq? (pascal-triangle 4 4) 1)
+ (check-eq? (pascal-triangle 5 1) 1)
+ (check-eq? (pascal-triangle 5 2) 4)
+ (check-eq? (pascal-triangle 5 3) 6)
+ (check-eq? (pascal-triangle 5 4) 4)
+ (check-eq? (pascal-triangle 5 5) 1))
+
+(define (cc amount kinds-of-coins)
+  (define (first-denomination kinds-of-coins)
+    (cond ((= kinds-of-coins 1) 1)
+          ((= kinds-of-coins 2) 5)
+          ((= kinds-of-coins 3) 10)
+          ((= kinds-of-coins 4) 25)
+          ((= kinds-of-coins 5) 50)))
+  (cond ((= amount 0) 1)
+        ((or (< amount 0) (= kinds-of-coins 0)) 0)
+        (else (+ (cc amount
+                     (- kinds-of-coins 1))
+                 (cc (- amount
+                        (first-denomination kinds-of-coins))
+                     kinds-of-coins)))))
+(test-case
+ "Exercise 1.14"
+ (check-eq? (+
+             (+ 
+              (+
+               (+
+                (+
+                 (+ (cc 11 0)
+                    (+ (cc 10 0)
+                       (+ (cc 9 0)
+                          (+ (cc 8 0)
+                             (+ (cc 7 0)
+                                (+ (cc 6 0)
+                                   (+ (cc 5 0)
+                                      (+ (cc 4 0)
+                                         (+ (cc 3 0)
+                                            (+ (cc 2 0)
+                                               (+ (cc 1 0)
+                                                  (cc 0 1)))))))))))))
+                (+
+                 (+ (cc 6 0)
+                    (+ (cc 5 0))
+                    (+ (cc 4 0))
+                    (+ (cc 3 0)
+                       (+ (cc 2 0)
+                          (+ (cc 1 0)
+                             (cc 0 1)))))
+                 (+ (cc 1 1)
+                    (cc -4 0))))
+               (+
+                (+
+                 (+ (cc 1 0)
+                    (cc 0 1))
+                 (cc -4 0))
+                (cc -4 1)))
+              (cc -14 4))
+             (cc -39 5)) 4))
+
+(define (matrix m n v)
+  (define _matrix (make-vector m v))
+  (for ([i (in-range 0 m)])
+    (vector-set! _matrix i (make-vector n v)))
+  _matrix)
+(define (matrix-set! matrix m n v)
+  (vector-set! (vector-ref matrix m) n v))
+(define (matrix-ref matrix m n)
+  (vector-ref (vector-ref matrix m) n))
+(define (_count-change amount)
+  (define cache (matrix (+ amount 1) 5 null))
+  (vector-fill! (vector-ref cache 0) 1)
+  (for ([i (in-range 1 (vector-length cache))])
+    (matrix-set! cache i 0 0))
+  (define (cc amount kinds-of-coins)
+    (define (first-denomination kinds-of-coins)
+      (cond ((= kinds-of-coins 1) 1)
+            ((= kinds-of-coins 2) 5)
+            ((= kinds-of-coins 3) 10)
+            ((= kinds-of-coins 4) 25)
+            ((= kinds-of-coins 5) 50)))
+    (cond ((= amount 0) 1)
+          ((or (< amount 0) (= kinds-of-coins 0)) 0) 
+          ;((not (null? (matrix-ref cache amount (- kinds-of-coins 1))))
+           ;(matrix-ref cache amount (- kinds-of-coins 1)))
+          (else (+ (cc amount
+                       (- kinds-of-coins 1))
+                   (cc (- amount
+                          (first-denomination kinds-of-coins))
+                       kinds-of-coins)))))
+  (cc amount 5))
+(_count-change 11)
