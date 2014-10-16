@@ -2,6 +2,9 @@
 (require rackunit)
 (require racket/trace)
 
+(define (++ x) (+ x 1))
+(define (-- x) (- x 1))
+
 (test-case
  "1.1.1 Expressions"
  (check-eq? (+ 137 349) 486)
@@ -17,12 +20,13 @@
                      (+ 3 5)))
                (+ (- 10 7)
                   6)) 57))
-(define size 2)
+
 (define pi 3.14159)
 (define radius 10)
 (define circumference (* 2 pi radius))
 (test-case
  "1.1.2 Naming and the Environment"
+ (define size 2)
  (check-eq? size 2)
  (check-eq? (* 5 size) 10)
  (check-eqv? (* pi (* radius radius)) 314.159)
@@ -36,27 +40,30 @@
 (define (square x) (* x x))
 (define (sum-of-squares x y)
   (+ (square x) (square y)))
-(define (_f a)
-  (sum-of-squares (+ a 1) (* a 2)))
 (test-case
  "1.1.4 Compound Procedures"
+ (define (f a)
+   (sum-of-squares (++ a) (* a 2)))
  (check-eq? (square 21) 441)
  (check-eq? (square (+ 2 5)) 49)
  (check-eq? (square (square 3)) 81)
  (check-eq? (sum-of-squares 3 4) 25)
- (check-eq? (_f 5) 136))
+ (check-eq? (f 5) 136))
+
 (test-case
  "1.1.5 The Substitution Model for Procedure Application"
- (check-eq? (_f 5) 136)
- (check-eq? (sum-of-squares (+ 5 1) (* 5 2)) 136)
+ (define (f a)
+   (sum-of-squares (++ a) (* a 2)))
+ (check-eq? (f 5) 136)
+ (check-eq? (sum-of-squares (++ 5) (* 5 2)) 136)
  (check-eq? (+ (square 6) (square 10)) 136)
  (check-eq? (+ (* 6 6) (* 10 10)) 136)
  (check-eq? (+ 36 100) 136)
  ; Applicative order versus normal order
- (check-eq? (_f 5) 136)
- (check-eq? (sum-of-squares (+ 5 1) (* 5 2)) 136)
- (check-eq? (+ (square (+ 5 1)) (square (* 5 2))) 136)
- (check-eq? (+ (* (+ 5 1) (+ 5 1)) (* (* 5 2) (* 5 2))) 136)
+ (check-eq? (f 5) 136)
+ (check-eq? (sum-of-squares (++ 5) (* 5 2)) 136)
+ (check-eq? (+ (square (++ 5)) (square (* 5 2))) 136)
+ (check-eq? (+ (* (++ 5) (++ 5)) (* (* 5 2) (* 5 2))) 136)
  (check-eq? (+ (* 6 6) (* 10 10)) 136)
  (check-eq? (+ 36 100) 136))
 
@@ -64,21 +71,21 @@
   (if (< x 0)
       (- x)
       x))
-(define (lt-10-gt-5? x)
-  (and (> x 5) (< x 10)))
 (define (>= x y)
   (not (< x y)))
 (test-case
  "1.1.6 Conditional Expressions and Predicates"
+ (define (lt-10-gt-5? x)
+   (and (> x 5) (< x 10)))
  (check-true (lt-10-gt-5? 6)))
 
-(define a 3)
-(define b (+ a 1))
 (test-case
  "Exercise 1.1"
+ (define a 3)
+ (define b (++ a))
  (check-eq? 10 10)
  (check-eq? (+ 5 3 4) 12)
- (check-eq? (- 9 1) 8)
+ (check-eq? (-- 9) 8)
  (check-eq? (/ 6 2) 3)
  (check-eq? (+ (* 2 4) (- 4 6)) 6)
  (check-eq? (+ a b (* a b)) 19)
@@ -93,23 +100,23 @@
  (check-eq? (* (cond ((> a b) a)
                      ((< a b) b)
                      (else -1))
-               (+ a 1)) 16))
+               (++ a)) 16))
 
 (test-case
  "Exercise 1.2"
  (check-eqv? (/ (+ 5 4 (- 2 (- 3 (+ 6 4/5))))
                 (* 3 (- 6 2) (- 2 7))) -37/150))
 
-(define (exercise-1-3 x y z)
-  (if (> x y)
-      (if (> y z)
-          (sum-of-squares x y)
-          (sum-of-squares x z))
-      (if (> x z)
-          (sum-of-squares y x)
-          (sum-of-squares y z))))
 (test-case
  "Exercise 1.3"
+ (define (exercise-1-3 x y z)
+   (if (> x y)
+       (if (> y z)
+           (sum-of-squares x y)
+           (sum-of-squares x z))
+       (if (> x z)
+           (sum-of-squares y x)
+           (sum-of-squares y z))))
  (check-eq? (exercise-1-3 1 2 3) 13)
  (check-eq? (exercise-1-3 2 2 3) 13)
  (check-eq? (exercise-1-3 2 3 3) 18)
@@ -118,18 +125,18 @@
  (check-eq? (exercise-1-3 2 1 3) 13)
  (check-eq? (exercise-1-3 3 1 2) 13))
 
-(define (a-plus-abs-b a b)
-  ((if (> b 0) + -) a b))
 (test-case
  "Exercise 1.4"
+ (define (a-plus-abs-b a b)
+   ((if (> b 0) + -) a b))
  (check-eq? (a-plus-abs-b 5 -10) 15))
 
 (define epsilon 0.0001)
 (define (average x y)
   (/ (+ x y) 2))
-(define (approx? x y)
-  (>= (* epsilon 10) (abs (- x y))))
 (define (check-approx? actual expected)
+  (define (approx? x y)
+    (>= (* epsilon 10) (abs (- x y))))
   (check-true (approx? actual expected)))
 
 (define (sqrt x)
@@ -137,11 +144,11 @@
     (< (abs (- (improve guess) guess)) (* guess epsilon)))
   (define (improve guess)
     (average guess (/ x guess)))
-  (define (sqrt-iter guess)
+  (define (_sqrt guess)
     (if (good-enough? guess)
         guess
-        (sqrt-iter (improve guess))))
-  (sqrt-iter 1.0))
+        (_sqrt (improve guess))))
+  (_sqrt 1.0))
 (test-case
  "1.1.7 Example: Square roots by Newton's Method"
  (check-approx? (sqrt 2) 1.414)
@@ -164,104 +171,110 @@
  "Exercise 1.8"
  (check-approx? (cube (cuberoot 27)) 27))
 
-(define (_factorial n)
-  (if (= n 1)
-      1
-      (* n (_factorial (- n 1)))))
-(define (factorial n)
-  (define (fact-iter product counter)
-    (if (> counter n)
-        product
-        (fact-iter (* counter product)
-                   (+ counter 1))))
-  (fact-iter 1 1))
-
 (test-case
- "1.2.1 Linear Recursion and Iteration"
- (check-eq? (_factorial 6) 720)
+ "1.2.1 Linear Recursion"
+ (define (factorial n)
+   (if (= n 1)
+       1
+       (* n (factorial (- n 1)))))
+ (check-eq? (factorial 6) 720))
+(test-case
+ "1.2.1 Iterative"
+ (define (factorial n)
+   (define (fact-iter product counter)
+     (if (> counter n)
+         product
+         (fact-iter (* counter product)
+                    (+ counter 1))))
+   (fact-iter 1 1))
  (check-eq? (factorial 6) 720))
 
-(define (A x y)
-  (cond ((= y 0) 0)
-        ((= x 0) (* 2 y))
-        ((= y 1) 2)
-        (else (A (- x 1) (A x (- y 1))))))
 (test-case
  "Exercise 1.10"
+ (define (A x y)
+   (cond ((= y 0) 0)
+         ((= x 0) (* 2 y))
+         ((= y 1) 2)
+         (else (A (- x 1) (A x (- y 1))))))
  (check-eq? (A 1 10) 1024)
  (check-eq? (A 2 4) 65536)
  (check-eq? (A 3 3) 65536))
 
-(define (_fib n)
-  (cond ((= n 0) 0)
-        ((= n 1) 1)
-        (else (+ (_fib (- n 1)) (_fib (- n 2))))))
-(define (fib n)
-  (define (fib-iter a b count)
-    (if (= count 0)
-        b
-        (fib-iter (+ a b) a (- count 1))))
-  (fib-iter 1 0 n))
-(define (count-change amount)
-  (define (cc amount kinds-of-coins)
-    (define (first-denomination kinds-of-coins)
-      (cond ((= kinds-of-coins 1) 1)
-            ((= kinds-of-coins 2) 5)
-            ((= kinds-of-coins 3) 10)
-            ((= kinds-of-coins 4) 25)
-            ((= kinds-of-coins 5) 50)))
-    (cond ((= amount 0) 1)
-          ((or (< amount 0) (= kinds-of-coins 0)) 0)
-          (else (+ (cc amount
-                       (- kinds-of-coins 1))
-                   (cc (- amount
-                          (first-denomination kinds-of-coins))
-                       kinds-of-coins)))))
-  (cc amount 5))
 (test-case
- "1.2.2 Tree Recursion"
- (check-eq? (_fib 6) 8)
+ "1.2.2 Tree Recusion, Recursive"
+ (define (fib n)
+   (cond ((= n 0) 0)
+         ((= n 1) 1)
+         (else (+ (fib (-- n)) (fib (- n 2))))))
+ (check-eq? (fib 6) 8))
+(test-case
+ "1.2.2 Tree Recursion, Iterative"
+ (define (fib n)
+   (define (fib-iter a b count)
+     (if (= count 0)
+         b
+         (fib-iter (+ a b) a (-- count))))
+   (fib-iter 1 0 n))
+ (define (count-change amount)
+   (define (cc amount kinds-of-coins)
+     (define (first-denomination kinds-of-coins)
+       (cond ((= kinds-of-coins 1) 1)
+             ((= kinds-of-coins 2) 5)
+             ((= kinds-of-coins 3) 10)
+             ((= kinds-of-coins 4) 25)
+             ((= kinds-of-coins 5) 50)))
+     (cond ((= amount 0) 1)
+           ((or (< amount 0) (= kinds-of-coins 0)) 0)
+           (else (+ (cc amount
+                        (-- kinds-of-coins))
+                    (cc (- amount
+                           (first-denomination kinds-of-coins))
+                        kinds-of-coins)))))
+   (cc amount 5))
  (check-eq? (fib 6) 8)
  (check-eq? (count-change 100) 292))
 
-(define (f n)
-  (cond ((< n 3) n)
-        (else (+ (f (- n 1))
-                 (* 2 (f (- n 2)))
-                 (* 3 (f (- n 3)))))))
-(define (f-iter n)
-  (define (_f-iter counter a b c)
-    (cond ((<= counter n)
-           (_f-iter (+ counter 1)
-                    (+ a
-                       (* 2 b)
-                       (* 3 c))
-                    a b))
-          (else a)))
-  (cond ((< n 3) n)
-        (else (_f-iter 3 2 1 0))))
+
 (test-case
- "Exercise 1.11"
+ "Exercise 1.11 Recursive"
+ (define (f n)
+   (cond ((< n 3) n)
+         (else (+ (f (-- n))
+                  (* 2 (f (- n 2)))
+                  (* 3 (f (- n 3)))))))
  (check-eq? (f 0) 0)
  (check-eq? (f 1) 1)
  (check-eq? (f 2) 2)
  (check-eq? (f 3) 4)
  (check-eq? (f 4) 11)
- (check-eq? (f 5) 25)
- (check-eq? (f-iter 0) 0)
- (check-eq? (f-iter 1) 1)
- (check-eq? (f-iter 2) 2)
- (check-eq? (f-iter 3) 4)
- (check-eq? (f-iter 4) 11)
- (check-eq? (f-iter 5) 25))
+ (check-eq? (f 5) 25))
+(test-case
+ "Exercise 1.11 Iterative"
+ (define (f n)
+   (define (_f counter a b c)
+     (cond ((<= counter n)
+            (_f (++ counter)
+                (+ a
+                   (* 2 b)
+                   (* 3 c))
+                a b))
+           (else a)))
+   (cond ((< n 3) n)
+         (else (_f 3 2 1 0))))
+ (check-eq? (f 0) 0)
+ (check-eq? (f 1) 1)
+ (check-eq? (f 2) 2)
+ (check-eq? (f 3) 4)
+ (check-eq? (f 4) 11)
+ (check-eq? (f 5) 25))
 
-(define (pascal-triangle r c)
-  (cond ((= c r) 1)
-        ((= c 1) 1)
-        (else (+ (pascal-triangle (- r 1) c)
-                 (pascal-triangle (- r 1) (- c 1))))))
 (test-case
  "Exercise 1.12"
+ (define (pascal-triangle r c)
+   (cond ((= c r) 1)
+         ((= c 1) 1)
+         (else (+ (pascal-triangle (-- r) c)
+                  (pascal-triangle (-- r) (-- c))))))
  (check-eq? (pascal-triangle 1 1) 1)
  (check-eq? (pascal-triangle 2 1) 1)
  (check-eq? (pascal-triangle 2 2) 1)
@@ -278,22 +291,22 @@
  (check-eq? (pascal-triangle 5 4) 4)
  (check-eq? (pascal-triangle 5 5) 1))
 
-(define (cc amount kinds-of-coins)
-  (define (first-denomination kinds-of-coins)
-    (cond ((= kinds-of-coins 1) 1)
-          ((= kinds-of-coins 2) 5)
-          ((= kinds-of-coins 3) 10)
-          ((= kinds-of-coins 4) 25)
-          ((= kinds-of-coins 5) 50)))
-  (cond ((= amount 0) 1)
-        ((or (< amount 0) (= kinds-of-coins 0)) 0)
-        (else (+ (cc amount
-                     (- kinds-of-coins 1))
-                 (cc (- amount
-                        (first-denomination kinds-of-coins))
-                     kinds-of-coins)))))
 (test-case
  "Exercise 1.14"
+ (define (cc amount kinds-of-coins)
+   (define (first-denomination kinds-of-coins)
+     (cond ((= kinds-of-coins 1) 1)
+           ((= kinds-of-coins 2) 5)
+           ((= kinds-of-coins 3) 10)
+           ((= kinds-of-coins 4) 25)
+           ((= kinds-of-coins 5) 50)))
+   (cond ((= amount 0) 1)
+         ((or (< amount 0) (= kinds-of-coins 0)) 0)
+         (else (+ (cc amount
+                      (-- kinds-of-coins))
+                  (cc (- amount
+                         (first-denomination kinds-of-coins))
+                      kinds-of-coins)))))
  (check-eq? (+
              (+ 
               (+
@@ -339,8 +352,8 @@
   (vector-set! (vector-ref matrix m) n v))
 (define (matrix-ref matrix m n)
   (vector-ref (vector-ref matrix m) n))
-(define (_count-change amount)
-  (define cache (matrix (+ amount 1) 5 null))
+(define (count-change amount)
+  (define cache (matrix (++ amount) 5 null))
   (vector-fill! (vector-ref cache 0) 1)
   (for ([i (in-range 1 (vector-length cache))])
     (matrix-set! cache i 0 0))
@@ -354,11 +367,11 @@
     (cond ((= amount 0) 1)
           ((or (< amount 0) (= kinds-of-coins 0)) 0) 
           ;((not (null? (matrix-ref cache amount (- kinds-of-coins 1))))
-           ;(matrix-ref cache amount (- kinds-of-coins 1)))
+          ;(matrix-ref cache amount (- kinds-of-coins 1)))
           (else (+ (cc amount
-                       (- kinds-of-coins 1))
+                       (-- kinds-of-coins))
                    (cc (- amount
                           (first-denomination kinds-of-coins))
                        kinds-of-coins)))))
   (cc amount 5))
-(_count-change 11)
+(count-change 11)
