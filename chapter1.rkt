@@ -383,8 +383,8 @@
       angle
       (p (sine (/ angle 3.0)))))
 (test-case
-	"Exercise 1.15"
-	(check-approx? (sine 12.5) -0.060813768577286265))
+ "Exercise 1.15"
+ (check-approx? (sine 12.5) -0.060813768577286265))
 
 (define (__expt b n)
   (if (= n 0)
@@ -405,15 +405,37 @@
         ((even? n) (square (expt b (/ n 2))))
         (else (* b (expt b (- n 1))))))
 (define (fast-expt b n)
-	(define (expt-iter b n a)
-		(cond ((= n 0) a)
-				  ((even? n) (expt-iter (square b) (/ n 2) a))
-				  (else (expt-iter b (- n 1) (* a b)))))
+  (define (expt-iter b n a)
+    (cond ((= n 0) a)
+          ((even? n) (expt-iter (square b) (/ n 2) a))
+          (else (expt-iter b (- n 1) (* a b)))))
   (expt-iter b n 1))
 (test-case
-	"Exercise 1.16"
-	(check-eq? (fast-expt 2 2) 4)
-	(check-eq? (fast-expt 2 3) 8)
-	(check-eq? (fast-expt 2 10) 1024)
-	(check-eq? (fast-expt 3 3) 27)
-	(check-eq? (fast-expt 5 5) 3125))
+ "Exercise 1.16"
+ (check-eq? (fast-expt 2 2) 4)
+ (check-eq? (fast-expt 2 3) 8)
+ (check-eq? (fast-expt 2 10) 1024)
+ (check-eq? (fast-expt 3 3) 27)
+ (check-eq? (fast-expt 5 5) 3125))
+
+(test-case
+ "Exercise 1.18"
+ (define (* multiplicand multiplier)
+   (define (double x)
+     (+ x x))
+   (define (halve x)
+     (arithmetic-shift x -1))
+   (define (*-iter multiplicand multiplier product)
+     (cond ((= multiplier 0) product)
+           ((even? multiplier) (*-iter (double multiplicand) (halve multiplier) product))
+           (else (*-iter multiplicand (- multiplier 1) (+ product multiplicand)))))
+   (*-iter multiplicand multiplier 0))
+ (check-eq? (* 6 7) 42)
+ (check-eq? (* 7 6) 42)
+ (check-eq? (* 12 12) 144)
+ (check-eq? (* 5 12) 60)
+ (check-eq? (* 12 5) 60))
+
+(test-case
+ "Exercise 1.19")
+ 
