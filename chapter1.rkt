@@ -343,20 +343,22 @@
               (cc -14 4))
              (cc -39 5)) 4))
 
-(define (matrix m n v)
-  (define _matrix (make-vector m v))
+(define (make-matrix m n v)
+  (define _make-matrix (make-vector m v))
   (for ([i (in-range 0 m)])
-    (vector-set! _matrix i (make-vector n v)))
-  _matrix)
+    (vector-set! _make-matrix i (make-vector n v)))
+  _make-matrix)
 (define (matrix-set! matrix m n v)
   (vector-set! (vector-ref matrix m) n v))
 (define (matrix-ref matrix m n)
   (vector-ref (vector-ref matrix m) n))
+
 (define (count-change amount)
-  (define cache (matrix (++ amount) 5 null))
-  (vector-fill! (vector-ref cache 0) 1)
-  (for ([i (in-range 1 (vector-length cache))])
-    (matrix-set! cache i 0 0))
+  (define table (make-matrix (++ amount) 5 null))
+  (vector-fill! (vector-ref table 0) 1)
+  (for ([i (in-range 1 (vector-length table))])
+    (matrix-set! table i 0 0))
+  
   (define (cc amount kinds-of-coins)
     (define (first-denomination kinds-of-coins)
       (cond ((= kinds-of-coins 1) 1)
@@ -366,12 +368,52 @@
             ((= kinds-of-coins 5) 50)))
     (cond ((= amount 0) 1)
           ((or (< amount 0) (= kinds-of-coins 0)) 0) 
-          ;((not (null? (matrix-ref cache amount (- kinds-of-coins 1))))
-          ;(matrix-ref cache amount (- kinds-of-coins 1)))
+          ;((not (null? (matrix-ref table amount (- kinds-of-coins 1))))
+          ; (matrix-ref table amount (- kinds-of-coins 1)))
           (else (+ (cc amount
                        (-- kinds-of-coins))
                    (cc (- amount
                           (first-denomination kinds-of-coins))
                        kinds-of-coins)))))
   (cc amount 5))
-(count-change 11)
+
+(define (sine angle)
+  (define (p x) (- (* 3 x) (* 4 (cube x))))
+  (if (not (> (abs angle) 0.1))
+      angle
+      (p (sine (/ angle 3.0)))))
+(test-case
+	"Exercise 1.15"
+	(check-approx? (sine 12.5) -0.060813768577286265))
+
+(define (__expt b n)
+  (if (= n 0)
+      1
+      (* b (__expt b (- n 1)))))
+(define (_expt b n)
+  (define (expt-iter b counter product)
+    (if (= counter 0)
+        product
+        (expt-iter b
+                   (- counter 1)
+                   (* b product))))
+  (expt-iter b n 1))
+(define (even? n)
+  (= (remainder n 2) 0))
+(define (expt b n)
+  (cond ((= n 0) 1)
+        ((even? n) (square (expt b (/ n 2))))
+        (else (* b (expt b (- n 1))))))
+(define (fast-expt b n)
+	(define (expt-iter b n a)
+		(cond ((= n 0) a)
+				  ((even? n) (expt-iter (square b) (/ n 2) a))
+				  (else (expt-iter b (- n 1) (* a b)))))
+  (expt-iter b n 1))
+(test-case
+	"Exercise 1.16"
+	(check-eq? (fast-expt 2 2) 4)
+	(check-eq? (fast-expt 2 3) 8)
+	(check-eq? (fast-expt 2 10) 1024)
+	(check-eq? (fast-expt 3 3) 27)
+	(check-eq? (fast-expt 5 5) 3125))
