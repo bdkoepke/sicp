@@ -438,4 +438,109 @@
 
 (test-case
  "Exercise 1.19")
+
+(define (gcd a b)
+  (if (= b 0)
+      a
+      (gcd b (remainder a b))))
+(test-case
+ "1.2.5 Greatest Common Divisors"
+ (check-eq? (gcd 206 40) 2))
+(test-case
+ "Exercise 1.20"
+ ; Normal Order Evaluation
+ (check-eq? (gcd 206 40)
+            2)
+ (check-eq? (if (= 40 0)
+                206
+                (gcd 40 (remainder 206 40)))
+            2)
+ (check-eq? (if (= (remainder 206 40) 0)
+                40
+                (gcd (remainder 206 40)
+                     (remainder 40 (remainder 206 40))))
+            2)
+ (check-eq? (if (= (remainder 40 (remainder 206 40)) 0)
+                (remainder 206 40)
+                (gcd (remainder 40 (remainder 206 40))
+                     (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))))
+            2)
+ (check-eq? (if (= (remainder (remainder 206 40) (remainder 40 (remainder 206 40))) 0)
+                (remainder 40 (remainder 206 40))
+                (gcd (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+                     (remainder (remainder 40 (remainder 206 40)) (remainder (remainder 206 40) (remainder 40 (remainder 206 40))))))
+            2)
  
+ (check-eq? (if (= (remainder (remainder 40 (remainder 206 40)) (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))) 0)
+                (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+                (gcd (remainder (remainder 40 (remainder 206 40)) (remainder (remainder 206 40) (remainder 40 (remainder 206 40))))
+                     (remainder (remainder (remainder 206 40) (remainder 40 (remainder 206 40))) (remainder (remainder 40 (remainder 206 40)) (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))))))
+            2)
+ ; Applicative Order Evaluation
+ (check-eq? (gcd 206 40)
+            2)
+ (check-eq? (gcd 40 (remainder 206 40))
+            2)
+ (check-eq? (gcd 6 (remainder 40 6))
+            2)
+ (check-eq? (gcd 4 (remainder 6 4))
+            2)
+ (check-eq? (gcd 2 (remainder 4 2))
+            2)
+ (check-eq? (gcd 2 (remainder 2 2))
+            2))
+
+(define (smallest-divisor n)
+  (define (find-divisor n test-divisor)
+    (define (divides? a b)
+      (= (remainder b a) 0))
+    (cond ((> (square test-divisor) n) n)
+          ((divides? test-divisor n) test-divisor)
+          (else (find-divisor n (+ test-divisor 1)))))
+  (find-divisor n 2))
+(define (prime? n)
+  (= n (smallest-divisor n)))
+(test-case
+ "1.2.6 Example: Testing for Primality"
+ (check-eq? (prime? 7) true)
+ (check-eq? (prime? 23) true)
+ (check-eq? (prime? 21) false)
+ (check-eq? (prime? 77) false))
+
+(define (expmod base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (remainder
+          (square (expmod base (/ exp 2) m))
+          m))
+        (else
+         (remainder
+          (* base (expmod base (- exp 1) m))
+          m))))
+(define (fermat-test n)
+  (define (try-it a)
+    (= (expmod a n n) a))
+  (try-it (+ 1 (random (- n 1)))))
+(define (fast-prime? n times)
+  (cond ((= times 0) true)
+        ((fermat-test n) (fast-prime? n (- times 1)))
+        (else false)))
+(test-case
+ "Exercise 1.21"
+ (check-eq? (smallest-divisor 199) 199)
+ (check-eq? (smallest-divisor 1999) 1999)
+ (check-eq? (smallest-divisor 19999) 7))
+
+(define (timed-prime-test n)
+  (newline)
+  (display n)
+  (start-prime-test n (current-milliseconds)))
+(define (start-prime-test n start-time)
+  (cond ((prime? n)
+      (report-prime (- (current-milliseconds) start-time)))))
+(define (report-prime elapsed-time)
+  (display " *** ")
+  (display elapsed-time))
+(test-case
+ "1.2.6 Example: Testing for Primality")
+(timed-prime-test 100000)
